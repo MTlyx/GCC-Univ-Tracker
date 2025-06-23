@@ -1,0 +1,12 @@
+services:
+  gcc-first-blood:
+    build: .
+    container_name: gcc-first-blood
+    environment:
+      - HTB_API_TOKEN=${HTB_API_TOKEN}
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - DISCORD_CHANNEL_ID=${DISCORD_CHANNEL_ID}
+      - DISCORD_TODO_CHANNEL_ID=${DISCORD_TODO_CHANNEL_ID}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
