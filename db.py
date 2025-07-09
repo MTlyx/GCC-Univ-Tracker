@@ -145,3 +145,10 @@ def get_all_fortresses():
     rows = c.fetchall()
     conn.close()
     return rows
+
+def remove_todo(item_type, htb_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("DELETE FROM todo WHERE type = ? AND htb_id = ?", (item_type, htb_id))
+    conn.commit()
+    conn.close()

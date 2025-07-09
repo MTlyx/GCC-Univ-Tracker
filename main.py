@@ -188,6 +188,8 @@ async def check_member_progress():
             embed.set_thumbnail(url=thumbnail)
             print(f"[-] Thumbnail {thumbnail}")
             await channel.send(embed=embed)
+            # Remove from todo after sending first blood embed
+            db.remove_todo(object_type, activity_id)
         print("=" * 50)
     except Exception as e:
         print(f"[-] Une erreur est survenue: {e}")

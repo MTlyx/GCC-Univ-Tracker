@@ -6,7 +6,7 @@
 
 <p align="center">
   🩸 Discord bot for tracking <strong>first bloods</strong> and <strong>HTB university progress</strong> in real-time.<br>
-  Built for ENSIBS' <strong>Galette Cidre CTF (GCC)</strong> team with love and blood.
+  Built for ENSIBS' <strong>Galette Cidre CTF (GCC)</strong> team with love.
 </p>
 
 <p align="center">
@@ -16,7 +16,7 @@
 
 ---
 
-## 📌 Overview
+## Overview
 
 This bot fetches activity from the [Hack The Box](https://hackthebox.com) university program and:
 
@@ -26,7 +26,7 @@ This bot fetches activity from the [Hack The Box](https://hackthebox.com) univer
 
 ---
 
-## ⚙️ Features
+## Features
 
 - 🔁 Discord bot running continuously
 - 🛠  HTB API integration to fetch machines/challenges/fortresses of an university
@@ -36,7 +36,7 @@ This bot fetches activity from the [Hack The Box](https://hackthebox.com) univer
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -63,7 +63,7 @@ docker compose up -d
 
 ---
 
-## 📁 Structure
+## Structure
 
 ```
 ├── main.py                # Main Discord bot logic
@@ -76,12 +76,12 @@ docker compose up -d
 
 ---
 
-## 🧪 Example Output
+## Example Output
 
 > Discord embed when a first blood is detected:
 
 ![](assets/First-blood.png)
 
-## 🧠 Credits
+## Credits
 
 Maintained by [@MTlyx](https://github.com/MTlyx) mainly for **[ENSIBS GCC team](https://app.hackthebox.com/universities/overview/518)**
