@@ -425,7 +425,7 @@ class HTBUniversityTracker:
         except Exception as e:
             print(f"[-] Erreur lors de l'envoi Discord TODO: {e}")
 
-@tasks.loop(minutes=10)
+@tasks.loop(hours=240)
 async def daily_update():
     """Tâche quotidienne de mise à jour des défis"""
     print("\n[*] Début de la mise à jour quotidienne...")
