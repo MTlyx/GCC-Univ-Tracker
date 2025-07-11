@@ -18,6 +18,13 @@ DISCORD_TODO_CHANNEL_ID = int(os.environ.get('DISCORD_TODO_CHANNEL_ID'))
 # Configuration des chemins
 DATA_DIR = Path("data")
 
+# Id des messages
+monitor_messages = {
+    "challenges": None,
+    "machines": None,
+    "forteresses": None
+}
+
 # Configuration du client Discord
 client = discord.Client(intents=discord.Intents.default())
 
@@ -335,6 +342,13 @@ class HTBUniversityTracker:
                 'fortresses': 0xFF0000   # Rouge
             }
 
+            # Stockage embeds
+            embeds = {
+                "challenges": None,
+                "machines": None,
+                "forteresses": None
+            }
+
             # --- CHALLENGES ---
             challenges = [x for x in todo_rows if x[0] == 'challenge']
             if challenges:
@@ -370,7 +384,7 @@ class HTBUniversityTracker:
                         field_name = f"{cat}" if i == 0 else f"{cat} (suite {i})"
                         embed.add_field(name=field_name, value=chunk, inline=False)
 
-                await channel.send(embed=embed)
+                embeds["challenges"] = embed
 
             # --- MACHINES ---
             machines = [x for x in todo_rows if x[0] == 'machine']
@@ -395,7 +409,7 @@ class HTBUniversityTracker:
                     else:
                         embed.add_field(name=name, value="(infos manquantes)", inline=False)
 
-                await channel.send(embed=embed)
+                embeds["machines"] = embed
 
             # --- FORTRESSES ---
             fortresses = [x for x in todo_rows if x[0] == 'fortress']
@@ -420,7 +434,22 @@ class HTBUniversityTracker:
                     else:
                         embed.add_field(name=name, value="(infos manquantes)", inline=False)
 
-                await channel.send(embed=embed)
+                embeds["forteresses"] = embed
+            
+            # Edit ou créer les messages dans le channel
+            for category in monitor_messages.keys():
+                if monitor_messages[category]:
+                    try:
+                        message = await channel.fetch_message(monitor_messages[category])
+                        await message.edit(embed=embeds[category])
+                    except discord.errors.NotFound:
+                        # Si le message n'existe plus, crée-en un nouveau
+                        message = await channel.send(embed=embeds[category])
+                        monitor_messages[category] = message.id
+                else:
+                    # Crée un nouveau message
+                    message = await channel.send(embed=embeds[category])
+                    monitor_messages[category] = message.id
 
         except Exception as e:
             print(f"[-] Erreur lors de l'envoi Discord TODO: {e}")
