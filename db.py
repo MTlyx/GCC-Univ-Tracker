@@ -52,6 +52,16 @@ CREATE TABLE IF NOT EXISTS todo (
 );
 '''
 
+CREATE_MACHINE_FLAGS = '''
+CREATE TABLE IF NOT EXISTS machine_flags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_htb_id TEXT,
+    machine_htb_id TEXT,
+    flag_type TEXT, -- 'user' or 'root'
+    UNIQUE(user_htb_id, machine_htb_id, flag_type)
+);
+'''
+
 def init_db():
     DB_PATH.parent.mkdir(exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
@@ -61,6 +71,7 @@ def init_db():
     c.execute(CREATE_MACHINES)
     c.execute(CREATE_FORTRESSES)
     c.execute(CREATE_TODO)
+    c.execute(CREATE_MACHINE_FLAGS)
     conn.commit()
     conn.close()
 
@@ -145,6 +156,37 @@ def get_all_fortresses():
     rows = c.fetchall()
     conn.close()
     return rows
+
+def add_machine_flag(user_htb_id, machine_htb_id, flag_type):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute(
+        "INSERT OR IGNORE INTO machine_flags (user_htb_id, machine_htb_id, flag_type) VALUES (?, ?, ?)",
+        (user_htb_id, machine_htb_id, flag_type)
+    )
+    conn.commit()
+    conn.close()
+
+def get_machine_flags(user_htb_id, machine_htb_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute(
+        "SELECT flag_type FROM machine_flags WHERE user_htb_id = ? AND machine_htb_id = ?",
+        (user_htb_id, machine_htb_id)
+    )
+    rows = c.fetchall()
+    conn.close()
+    return [row[0] for row in rows]
+
+def remove_machine_flag(user_htb_id, machine_htb_id, flag_type):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute(
+        "DELETE FROM machine_flags WHERE user_htb_id = ? AND machine_htb_id = ? AND flag_type = ?",
+        (user_htb_id, machine_htb_id, flag_type)
+    )
+    conn.commit()
+    conn.close()
 
 def remove_todo(item_type, htb_id):
     conn = sqlite3.connect(DB_PATH)
