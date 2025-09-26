@@ -76,9 +76,9 @@ async def get_all_activities(member_id):
                     if flag_type in ('user', 'root'):
                         db.add_machine_flag(str(member_id), str(activity.get('id')), flag_type)
                 elif object_type == 'fortress':
-                    flag_type = activity.get('flag_title', None)
-                    if flag_type:
-                        db.add_fortress_flag(str(member_id), str(activity.get('id')), flag_type)
+                    flag_title = activity.get('flag_title', None)
+                    if flag_title:
+                        db.add_fortress_flag(str(member_id), str(activity.get('id')), flag_title)
                 elif object_type == 'challenge':
                     db.add_challenge_completion(str(member_id), str(activity.get('id')))
             print(f"[+] Activités mises à jour pour membre {member_id}")
@@ -229,7 +229,7 @@ async def update_discord_todo_list(channel, todo_rows):
             color=colors['challenges'],
             timestamp=datetime.now(timezone.utc)
         )
-        embed.set_footer(text="HTB Univ tracker")
+        embed.set_footer(text="HTB Univ tracker by Tlyx")
         all_chall = {row[0]: row for row in db.get_all_challenges()}
         categories = {}
         for _, htb_id, name in challenge_rows:
@@ -241,8 +241,8 @@ async def update_discord_todo_list(channel, todo_rows):
             else:
                 categories.setdefault('Autres', []).append((name, '?', 0))
         
-        for cat, items in sorted(categories.items(), key=lambda x: len(x[1]), reverse=True):  # Tri par nombre de challenges
-            items_sorted = sorted(items, key=lambda x: x[2], reverse=True)  # Tri par points
+        for cat, items in sorted(categories.items(), key=lambda x: len(x[1]), reverse=True):
+            items_sorted = sorted(items, key=lambda x: x[2], reverse=True)
             lines = [f"{name} [{diff.split('(')[0].strip()}] - {pts//10}" for name, diff, pts in items_sorted]
             field_chunks = []
             current = ""
@@ -271,7 +271,7 @@ async def update_discord_todo_list(channel, todo_rows):
             color=colors['machines'],
             timestamp=datetime.now(timezone.utc)
         )
-        embed.set_footer(text="HTB Univ tracker")
+        embed.set_footer(text="HTB Univ tracker by Tlyx")
         all_mach = {row[0]: row for row in db.get_all_machines()}
         machine_flags = {}
         for t, htb_id, name in machines:
@@ -303,7 +303,7 @@ async def update_discord_todo_list(channel, todo_rows):
             color=colors['fortresses'],
             timestamp=datetime.now(timezone.utc)
         )
-        embed.set_footer(text="HTB Univ tracker")
+        embed.set_footer(text="HTB Univ tracker by Tlyx")
         all_fort = {row[0]: row for row in db.get_all_fortresses()}
         fortress_flags_map = {}
         for _, htb_key, name in fortress_rows:
@@ -360,16 +360,20 @@ async def update_discord_todo_list(channel, todo_rows):
                 message = await channel.fetch_message(monitor_messages[category])
                 if embeds.get(category):
                     await message.edit(embed=embeds[category])
+                    print(f"[+] Embed Discord mis à jour pour {category}")
                 else:
                     await message.delete()
                     monitor_messages[category] = None
+                    print(f"[+] Message Discord supprimé pour {category} (aucune donnée)")
             except discord.errors.NotFound:
                 if embeds.get(category):
                     message = await channel.send(embed=embeds[category])
                     monitor_messages[category] = message.id
+                    print(f"[+] Nouveau message Discord envoyé pour {category}, ID: {message.id}")
         elif embeds.get(category):
             message = await channel.send(embed=embeds[category])
             monitor_messages[category] = message.id
+            print(f"[+] Nouveau message Discord envoyé pour {category}, ID: {message.id}")
 
     return challenge_rows, machine_user, machine_root, fortress_rows
 
@@ -405,6 +409,7 @@ async def check_member_progress():
         member_id = str(member['id'])
         activities = await get_all_activities(member_id)
         if activities:
+            print(f"[*] Vérification des activités pour membre {member_id}, {len(activities)} activités trouvées")
             latest_activity = activities[0]
             object_type = latest_activity.get('object_type')
             added = False
@@ -412,7 +417,9 @@ async def check_member_progress():
             todo_id = None
             if object_type == 'challenge':
                 chall_id = str(latest_activity.get('id'))
-                if chall_id not in db.get_challenge_completions(member_id):
+                existing_completions = db.get_challenge_completions(member_id)
+                print(f"[*] Challenge ID {chall_id}, déjà complété: {chall_id in existing_completions}")
+                if chall_id not in existing_completions:
                     db.add_challenge_completion(member_id, chall_id)
                     added = True
                     todo_type = 'challenge'
@@ -421,7 +428,9 @@ async def check_member_progress():
                 flag_type = latest_activity.get('type')
                 if flag_type in ('user', 'root'):
                     machine_id = str(latest_activity.get('id'))
-                    if flag_type not in db.get_machine_flags(member_id, machine_id):
+                    existing_flags = db.get_machine_flags(member_id, machine_id)
+                    print(f"[*] Machine ID {machine_id}, flag {flag_type}, déjà flagué: {flag_type in existing_flags}")
+                    if flag_type not in existing_flags:
                         db.add_machine_flag(member_id, machine_id, flag_type)
                         added = True
                         todo_type = f'machine_{flag_type}'
@@ -430,7 +439,9 @@ async def check_member_progress():
                 flag_title = latest_activity.get('flag_title')
                 if flag_title:
                     fortress_id = str(latest_activity.get('id'))
-                    if flag_title not in db.get_fortress_flags(member_id, fortress_id):
+                    existing_flags = db.get_fortress_flags(member_id, fortress_id)
+                    print(f"[*] Forteresse ID {fortress_id}, flag '{flag_title}', déjà flagué: {flag_title in existing_flags}")
+                    if flag_title not in existing_flags:
                         db.add_fortress_flag(member_id, fortress_id, flag_title)
                         added = True
                         todo_type = 'fortress_flag'
@@ -439,7 +450,9 @@ async def check_member_progress():
                 conn = db.sqlite3.connect(db.DB_PATH)
                 c = conn.cursor()
                 c.execute("SELECT * FROM todo WHERE type = ? AND htb_id = ?", (todo_type, todo_id))
-                if c.fetchone():
+                todo_entry = c.fetchone()
+                print(f"[*] Vérification todo: type={todo_type}, htb_id={todo_id}, trouvé: {todo_entry is not None}")
+                if todo_entry:
                     _, rank_text, thumbnail = await fetch_member_profile(member_id)
                     name = latest_activity.get('name', 'Inconnu')
                     points = latest_activity.get('points', 0)
@@ -465,10 +478,11 @@ async def check_member_progress():
                         ),
                         color=0xFF0000,
                     )
-                    embed.set_footer(text="GCC University First Blood Tracker")
+                    embed.set_footer(text="GCC University First Blood Tracker by Tlyx")
                     embed.set_thumbnail(url=thumbnail)
                     await channel.send(embed=embed)
                     db.remove_todo(todo_type, todo_id)
+                    print(f"[+] Todo supprimé: type={todo_type}, htb_id={todo_id}")
                     # Mettre à jour la liste todo sur Discord
                     todo_rows = db.get_todo()
                     challenge_rows, machine_user, machine_root, fortress_rows = await update_discord_todo_list(todo_channel, todo_rows)
@@ -525,7 +539,7 @@ async def daily_update():
         # Mettre à jour les machines
         print("[*] Mise à jour des machines en base...")
         for m in content['machines']:
-            db.add_or_update_machine(m['id'], m['name'], m['difficulty'], m['points'], m['os'])
+            db.add_or_update_machine(m['id'], m['name'], c['difficulty'], m['points'], m['os'])
         
         # Mettre à jour les forteresses
         print("[*] Mise à jour des forteresses en base...")
