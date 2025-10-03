@@ -1,0 +1,68 @@
+# .github/workflows/deploy.yml
+name: Deploy Discord Bot to VPS
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Setup SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Deploy on VPS
+      run: |
+        ssh -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          # Clone repo if first deployment, otherwise pull latest changes
+          if [ ! -d ~/gcc-first-blood ]; then
+            echo "First deployment - Cloning repository..."
+            git clone https://github.com/MTlyx/GCC-Univ-Tracker.git ~/gcc-first-blood
+            cd ~/gcc-first-blood
+          else
+            echo "Updating existing deployment..."
+            cd ~/gcc-first-blood
+            git fetch origin
+            git reset --hard origin/main
+            rm -rf ~/gcc-first-blood/data/bot.db
+          fi
+
+          # Create .env file if it doesn't exist
+          if [ ! -f .env ]; then
+            echo "Creating .env file..."
+            cat > .env << 'ENV_EOF'
+        HTB_API_TOKEN=${{ secrets.HTB_API_TOKEN }}
+        DISCORD_TOKEN=${{ secrets.DISCORD_TOKEN }}
+        DISCORD_CHANNEL_ID=${{ secrets.DISCORD_CHANNEL_ID }}
+        DISCORD_TODO_CHANNEL_ID=${{ secrets.DISCORD_TODO_CHANNEL_ID }}
+        ENV_EOF
+          fi
+
+          # Create data directory if it doesn't exist
+          mkdir -p data
+
+          # Stop and remove existing container
+          docker compose down || true
+
+          # Remove old image to force rebuild
+          docker rmi gcc-first-blood || true
+
+          # Build and start container
+          docker compose up -d --build
+
+          # Show status
+          echo "=== Running Containers ==="
+          docker ps | grep gcc-first-blood
+          echo "=== Container Logs (last 20 lines) ==="
+          docker logs gcc-first-blood --tail 20
+        EOF

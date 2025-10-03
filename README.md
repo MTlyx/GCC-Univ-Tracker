@@ -53,7 +53,6 @@ HTB_API_TOKEN=your_htb_token
 DISCORD_TOKEN=your_discord_bot_token
 DISCORD_CHANNEL_ID=channel_id_for_first_blood
 DISCORD_TODO_CHANNEL_ID=channel_id_for_todo
-HTB_UNIVERSITY_ID=you_univ_ID
 ```
 
 ### Run with Docker Compose

@@ -7,7 +7,6 @@ services:
       - DISCORD_TOKEN=${DISCORD_TOKEN}
       - DISCORD_CHANNEL_ID=${DISCORD_CHANNEL_ID}
       - DISCORD_TODO_CHANNEL_ID=${DISCORD_TODO_CHANNEL_ID}
-      - HTB_UNIVERSITY_ID=${HTB_UNIVERSITY_ID}
     volumes:
       - ./data:/app/data
     restart: unless-stopped
