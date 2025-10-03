@@ -11,9 +11,6 @@ from datetime import time, timezone, datetime
 time_21   = time(hour=21, tzinfo=timezone.utc)
 time_21_1 = time(hour=21, minute=1, tzinfo=timezone.utc)
 
-time_21 = datetime.time(hour=21, tzinfo=datetime.timezone.utc)
-time_21_1 = datetime.time(hour=21, minute=1, tzinfo=datetime.timezone.utc)
-
 # Configuration des clients et constantes
 HTB_API_TOKEN = os.environ.get('HTB_API_TOKEN')
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
@@ -116,8 +113,8 @@ async def on_ready():
         DATA_DIR.mkdir(parents=True)
     
     # Démarrage des tâches périodiques
-    check_member_progress.start()
     update_htb_content.start()
+    check_member_progress.start()
 
     tracker = HTBUniversityTracker()
     await tracker.update_university_progress()
