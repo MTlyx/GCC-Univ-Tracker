@@ -6,8 +6,10 @@ import aiohttp
 import db
 from discord.ext import tasks
 from pathlib import Path
-from datetime import datetime, timezone
-import time
+from datetime import time, timezone, datetime
+
+time_21   = time(hour=21, tzinfo=timezone.utc)
+time_21_1 = time(hour=21, minute=1, tzinfo=timezone.utc)
 
 time_21 = datetime.time(hour=21, tzinfo=datetime.timezone.utc)
 time_21_1 = datetime.time(hour=21, minute=1, tzinfo=datetime.timezone.utc)
@@ -108,7 +110,6 @@ async def fetch_htb_content():
 @client.event
 async def on_ready():
     print(f"[+] Connecté en tant que {client.user.name}")
-    print("[*] Initialisation...")
     
     # Création du dossier data si nécessaire
     if not DATA_DIR.exists():
@@ -117,7 +118,10 @@ async def on_ready():
     # Démarrage des tâches périodiques
     check_member_progress.start()
     update_htb_content.start()
-    
+
+    tracker = HTBUniversityTracker()
+    await tracker.update_university_progress()
+
     print("[+] Bot prêt !")
     
     if not daily_update.is_running():
@@ -128,9 +132,7 @@ async def check_member_progress():
     try:
         print("\n[+] Démarrage d'une nouvelle vérification...")
         url = "https://labs.hackthebox.com/api/v4/university/members/518"
-        print(f"[+] Requête vers {url}")
         response = requests.get(url, headers=headers)
-        print(f"[+] Status code: {response.status_code}")
         if response.status_code != 200:
             print(f"[-] Erreur lors de la requête API: {response.text}")
             return
@@ -287,12 +289,10 @@ class HTBUniversityTracker:
             url = f"https://www.hackthebox.com/api/v4/challenge/info/{challenge_id}"
             try:
                 await asyncio.sleep(0.5)
-                print(f"[DEBUG] Récupération catégorie pour challenge {challenge_id} via {url}")
                 async with session.get(url, headers=headers, timeout=10) as resp:
                     if resp.status == 200:
                         data = await resp.json()
                         if 'challenge' in data and 'category_name' in data['challenge']:
-                            print(f"[+] Catégorie récupérée pour challenge {challenge_id}: {data['challenge']['category_name']}")
                             return data['challenge']['category_name']
                         else:
                             print(f"[!] Catégorie absente pour challenge {challenge_id}. Réponse brute: {data}")
@@ -319,7 +319,7 @@ class HTBUniversityTracker:
         }
         all_completed_flags = {}  # {machine_id: set(['user', 'root'])}
         for user in self.university_users:
-            print(f"\n[*] Vérification des défis complétés par {user['name']}...")
+            print(f"[*] Vérification des défis complétés par {user['name']}...")
             user_completed = await self.get_user_completed_content(user['htb_id'])
             for content_type in ['challenges', 'machines', 'fortresses']:
                 all_completed[content_type].update(user_completed[content_type])
@@ -402,9 +402,9 @@ class HTBUniversityTracker:
                 embed = discord.Embed(
                     title="Challenges",
                     color=colors['challenges'],
-                    timestamp=datetime.now()
+                    timestamp=datetime.now(timezone.utc)
                 )
-                embed.set_footer(text="HTB Univ tracker by Tlyx")
+                embed.set_footer(text="HTB Univ tracker")
 
                 for cat, items in sorted(cat_map.items(), key=lambda x: len(x[1]), reverse=True):
                     items_sorted = sorted(items, key=lambda x: int(x[2]) if str(x[2]).isdigit() else 0, reverse=True)
@@ -434,9 +434,9 @@ class HTBUniversityTracker:
                 embed = discord.Embed(
                     title="Machines",
                     color=colors['machines'],
-                    timestamp=datetime.now()
+                    timestamp=datetime.now(timezone.utc)
                 )
-                embed.set_footer(text="HTB Univ tracker by Tlyx")
+                embed.set_footer(text="HTB Univ tracker")
 
                 all_mach = {row[0]: row for row in db.get_all_machines()}
                 # Group by machine and show which flags are missing
@@ -467,9 +467,9 @@ class HTBUniversityTracker:
                 embed = discord.Embed(
                     title="Forteresses",
                     color=colors['fortresses'],
-                    timestamp=datetime.now()
+                    timestamp=datetime.now(timezone.utc)
                 )
-                embed.set_footer(text="HTB Univ tracker by Tlyx")
+                embed.set_footer(text="HTB Univ tracker")
 
                 all_fort = {row[0]: row for row in db.get_all_fortresses()}
                 for _, htb_id, name in fortresses:
